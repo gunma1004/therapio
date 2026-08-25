@@ -1,4 +1,4 @@
-﻿import uvicorn
+import uvicorn
 from fastapi import FastAPI, HTTPException, Response
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -170,19 +170,35 @@ def get_rotated_shops(page_seed: str = "") -> list:
     offset = sum(ord(c) for c in page_seed) % len(SHOPS)
     return SHOPS[offset:] + SHOPS[:offset]
 
-def render_layout(title: str, description: str, keywords: str, body_content: str) -> str:
+def render_layout(title: str, description: str, keywords: str, body_content: str, path: str = "/") -> str:
+    page_url = f"{BASE_URL}{path}"
+    og_image = f"{BASE_URL}/static/images/banner.jpg"
     return f"""<!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <meta name="naver-site-verification" content="947a0e4672b21e61b5d62aa23f5d1133df4d9184" />
-    <meta name="naver-site-verification" content="947a0e4672b21e61b5d62aa23f5d1133df4d9184" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="naver-site-verification" content="947a0e4672b21e61b5d62aa23f5d1133df4d9184" />
+    <meta name="robots" content="index, follow">
     <title>{title}</title>
     <meta name="description" content="{description}">
     <meta name="keywords" content="{keywords}">
+
+    <!-- Open Graph (SNS / 네이버 검색 최적화) -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="{title}">
+    <meta property="og:description" content="{description}">
+    <meta property="og:url" content="{page_url}">
+    <meta property="og:image" content="{og_image}">
+    <meta property="og:site_name" content="테라피오 (Therapio)">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{title}">
+    <meta name="twitter:description" content="{description}">
+    <meta name="twitter:image" content="{og_image}">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;600;700;900&display=swap" rel="stylesheet">
@@ -318,7 +334,6 @@ def render_map_widget(query_name: str) -> str:
     </section>
     """
 
-# --- SEO: robots.txt 자동 응답 ---
 @app.get("/robots.txt", response_class=Response)
 async def robots_txt():
     content = f"""User-agent: *
@@ -327,7 +342,6 @@ Sitemap: {BASE_URL}/sitemap.xml
 """
     return Response(content=content, media_type="text/plain")
 
-# --- SEO: sitemap.xml 자동 생성 ---
 @app.get("/sitemap.xml", response_class=Response)
 async def sitemap_xml():
     urls = [BASE_URL]
@@ -404,7 +418,7 @@ async def index_page():
     </section>
     {render_qa_section("서울·경기·인천", is_chuljang=False)}
     """
-    return HTMLResponse(content=render_layout("테라피오 | 서울·경기·인천 24시 방문 홈케어 & 힐링 테라피 안내", "선입금 없는 100% 후불 안심 케어!", "방문 홈케어, 홈타이, 스웨디시, 아로마 마사지", content), media_type="text/html; charset=utf-8")
+    return HTMLResponse(content=render_layout("테라피오 | 서울·경기·인천 24시 방문 홈케어 & 힐링 테라피 안내", "선입금 없는 100% 후불 안심 케어! 서울·경기·인천 25분 내 신속 방문 홈케어 및 테라피 안내", "방문 홈케어, 홈타이, 스웨디시, 아로마 마사지", content, path="/"), media_type="text/html; charset=utf-8")
 
 @app.get("/{sido}", response_class=HTMLResponse)
 async def sido_page(sido: str):
@@ -431,7 +445,7 @@ async def sido_page(sido: str):
     {render_course_info()}
     {render_qa_section(reg['name'], is_chuljang=True)}
     """
-    return HTMLResponse(content=render_layout(f"{reg['name']} 출장마사지·홈타이 추천 24시 안내 | 테라피오", reg['description'], f"{reg['name']} 출장마사지, {reg['name']} 홈타이", content), media_type="text/html; charset=utf-8")
+    return HTMLResponse(content=render_layout(f"{reg['name']} 출장마사지·홈타이 추천 24시 안내 | 테라피오", reg['description'], f"{reg['name']} 출장마사지, {reg['name']} 홈타이", content, path=f"/{sido}"), media_type="text/html; charset=utf-8")
 
 @app.get("/{sido}/{gugun}", response_class=HTMLResponse)
 async def gugun_page(sido: str, gugun: str):
@@ -460,7 +474,7 @@ async def gugun_page(sido: str, gugun: str):
     {render_course_info()}
     {render_qa_section(gugun_info['name'], is_chuljang=True)}
     """
-    return HTMLResponse(content=render_layout(f"{full_loc_name} 출장마사지·홈타이 24시 실시간 방문 | 테라피오", f"{gugun_info['name']} 25분 내 빠른 방문", f"{gugun_info['name']} 출장마사지, {full_loc_name} 출장안마", content), media_type="text/html; charset=utf-8")
+    return HTMLResponse(content=render_layout(f"{full_loc_name} 출장마사지·홈타이 24시 실시간 방문 | 테라피오", f"{gugun_info['name']} 25분 내 빠른 방문", f"{gugun_info['name']} 출장마사지, {full_loc_name} 출장안마", content, path=f"/{sido}/{gugun}"), media_type="text/html; charset=utf-8")
 
 @app.get("/{sido}/{gugun}/{dong}", response_class=HTMLResponse)
 async def dong_page(sido: str, gugun: str, dong: str):
@@ -487,9 +501,8 @@ async def dong_page(sido: str, gugun: str, dong: str):
     {render_course_info()}
     {render_qa_section(dong_name, is_chuljang=True)}
     """
-    return HTMLResponse(content=render_layout(f"{full_dong_name} 출장마사지·홈타이 24시 신속방문 | 테라피오", f"{dong_name} 20~25분 내 실시간 방문", f"{dong_name} 출장마사지, {full_dong_name} 출장안마", content), media_type="text/html; charset=utf-8")
+    return HTMLResponse(content=render_layout(f"{full_dong_name} 출장마사지·홈타이 24시 신속방문 | 테라피오", f"{dong_name} 20~25분 내 실시간 방문", f"{dong_name} 출장마사지, {full_dong_name} 출장안마", content, path=f"/{sido}/{gugun}/{dong}"), media_type="text/html; charset=utf-8")
 
 if __name__ == "__main__":
     print("Therapio server ready")
     uvicorn.run(app, host="0.0.0.0", port=8001)
-
