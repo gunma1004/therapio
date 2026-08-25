@@ -1,5 +1,5 @@
-﻿import uvicorn
-from fastapi import FastAPI, HTTPException
+import uvicorn
+from fastapi import FastAPI, HTTPException, Response
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 import os
@@ -8,6 +8,8 @@ app = FastAPI(title="Therapio Platform")
 
 os.makedirs("static/images", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+BASE_URL = "https://therapio.onrender.com"
 
 REGIONS = {
     "seoul": {
@@ -86,7 +88,6 @@ REGIONS = {
     }
 }
 
-# 직접 만든 로컬 이미지 경로 적용 (실패 시 기본 고화질 이미지 백업)
 SHOPS = [
     {
         "id": 1,
@@ -176,6 +177,7 @@ def render_layout(title: str, description: str, keywords: str, body_content: str
     <meta charset="UTF-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="naver-site-verification" content="947a0e4672b21e61b5d62aa23f5d1133df4d9184" />
     <title>{title}</title>
     <meta name="description" content="{description}">
     <meta name="keywords" content="{keywords}">
@@ -314,6 +316,33 @@ def render_map_widget(query_name: str) -> str:
     </section>
     """
 
+# --- SEO: robots.txt 자동 응답 ---
+@app.get("/robots.txt", response_class=Response)
+async def robots_txt():
+    content = f"""User-agent: *
+Allow: /
+Sitemap: {BASE_URL}/sitemap.xml
+"""
+    return Response(content=content, media_type="text/plain")
+
+# --- SEO: sitemap.xml 자동 생성 ---
+@app.get("/sitemap.xml", response_class=Response)
+async def sitemap_xml():
+    urls = [BASE_URL]
+    for s_k, s_v in REGIONS.items():
+        urls.append(f"{BASE_URL}/{s_k}")
+        for g_k, g_v in s_v["districts"].items():
+            urls.append(f"{BASE_URL}/{s_k}/{g_k}")
+            for d_k in g_v["dongs"].keys():
+                urls.append(f"{BASE_URL}/{s_k}/{g_k}/{d_k}")
+    
+    xml_items = "".join([f"<url><loc>{u}</loc><changefreq>daily</changefreq><priority>0.8</priority></url>" for u in urls])
+    content = f"""<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+{xml_items}
+</urlset>"""
+    return Response(content=content, media_type="application/xml")
+
 @app.get("/", response_class=HTMLResponse)
 async def index_page():
     region_blocks = []
@@ -336,7 +365,6 @@ async def index_page():
     </div>
     """ for r in REVIEWS])
     content = f"""
-    <!-- 메인 배너: 직접 올린 banner.jpg 우선 표시 -->
     <section class="text-center my-2">
         <div class="overflow-hidden rounded-3xl border border-amber-500/30 p-8 md:p-14 relative text-center space-y-3 shadow-2xl bg-cover bg-center" style="background-image: linear-gradient(rgba(0,0,0,0.75), rgba(0,0,0,0.85)), url('/static/images/banner.jpg'), url('https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1200&q=80');">
             <span class="inline-block px-4 py-1 rounded-full bg-amber-500 text-black font-extrabold text-xs tracking-widest shadow-lg">
