@@ -177,6 +177,7 @@ def render_layout(title: str, description: str, keywords: str, body_content: str
     <meta charset="UTF-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta name="naver-site-verification" content="947a0e4672b21e61b5d62aa23f5d1133df4d9184" />
+    <meta name="naver-site-verification" content="947a0e4672b21e61b5d62aa23f5d1133df4d9184" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="naver-site-verification" content="947a0e4672b21e61b5d62aa23f5d1133df4d9184" />
     <title>{title}</title>
@@ -491,3 +492,4 @@ async def dong_page(sido: str, gugun: str, dong: str):
 if __name__ == "__main__":
     print("Therapio server ready")
     uvicorn.run(app, host="0.0.0.0", port=8001)
+
